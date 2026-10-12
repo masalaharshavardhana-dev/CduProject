@@ -1,0 +1,294 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { UserPlus, LogIn, GraduationCap, ArrowLeft, Mail, Lock, User, Hash, Sparkles } from 'lucide-react';
+
+function StudentLogin() {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [rollNumber, setRollNumber] = useState('');
+  
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLoginSuccess = (role, token) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('role', role);
+    if (role === 'ADMIN') {
+      navigate('/admin/dashboard', { replace: true });
+    } else if (role === 'RECRUITER') {
+      navigate('/recruiter/dashboard', { replace: true });
+    } else {
+      navigate('/student/dashboard', { replace: true });
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      if (isSignUp) {
+        const response = await axios.post('http://localhost:5000/api/auth/register', {
+          email,
+          password,
+          role: 'STUDENT',
+          fullName: fullName.trim() || undefined,
+          rollNumber: rollNumber.trim() || undefined
+        });
+
+        setSuccess('Account created successfully! Redirecting...');
+        setTimeout(() => {
+          handleLoginSuccess(response.data.role, response.data.token);
+        }, 1000);
+      } else {
+        const response = await axios.post('http://localhost:5000/api/auth/login', {
+          email,
+          password
+        });
+
+        handleLoginSuccess(response.data.role, response.data.token);
+      }
+    } catch (err) {
+      console.error(err);
+      if (err.message === 'Network Error') {
+        setError('Backend server is not reachable on port 5000. Please ensure backend is running.');
+      } else if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError(isSignUp ? 'Registration failed. Please try again.' : 'Login failed. Please check your credentials.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Demo 1-Click Login Helper
+  const handleQuickDemoLogin = async (demoEmail, demoPassword) => {
+    setError('');
+    setLoading(true);
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/login', {
+        email: demoEmail,
+        password: demoPassword,
+      });
+      handleLoginSuccess(response.data.role, response.data.token);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Demo login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/50 to-slate-100 flex flex-col items-center justify-center p-4 font-sans">
+      <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-slate-100 transition-all">
+        
+        {/* Header Icon & Title */}
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-3 shadow-inner">
+            <GraduationCap size={30} />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800">
+            {isSignUp ? 'Student Registration' : 'Student Candidate Login'}
+          </h2>
+          <p className="text-xs text-slate-500 mt-1 text-center">
+            {isSignUp 
+              ? 'Create a verified student profile to participate in campus drives' 
+              : 'Enter your university email to access job openings & interviews'}
+          </p>
+        </div>
+
+        {/* Tab Switcher: Login vs Sign In */}
+        <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+          <button
+            type="button"
+            onClick={() => {
+              setIsSignUp(false);
+              setError('');
+              setSuccess('');
+            }}
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              !isSignUp 
+                ? 'bg-white text-indigo-600 shadow-sm' 
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <LogIn size={15} />
+            Log In
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsSignUp(true);
+              setError('');
+              setSuccess('');
+            }}
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              isSignUp 
+                ? 'bg-white text-indigo-600 shadow-sm' 
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <UserPlus size={15} />
+            Sign Up
+          </button>
+        </div>
+
+        {/* Error / Success Alerts */}
+        {error && (
+          <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+            <span>{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-5 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl flex items-center gap-2">
+            <span>{success}</span>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {isSignUp && (
+            <>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-12 text-slate-400" size={16} />
+                  <input
+                    type="text"
+                    required={isSignUp}
+                    placeholder="e.g. Rahul Sharma"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Roll / Hall Ticket Number
+                </label>
+                <div className="relative">
+                  <Hash className="absolute left-3.5 top-1/2 -translate-y-12 text-slate-400" size={16} />
+                  <input
+                    type="text"
+                    required={isSignUp}
+                    placeholder="e.g. 22CDUCS014"
+                    value={rollNumber}
+                    onChange={(e) => setRollNumber(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Email Address
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-12 text-slate-400" size={16} />
+              <input
+                type="email"
+                required
+                placeholder="student@cdu.edu"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-12 text-slate-400" size={16} />
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-100 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Processing...
+              </span>
+            ) : isSignUp ? (
+              <>
+                <UserPlus size={16} /> Complete Registration
+              </>
+            ) : (
+              <>
+                <LogIn size={16} /> Access Student Portal
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* 1-Click Quick Demo Logins */}
+        <div className="mt-6 pt-5 border-t border-slate-100">
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5 justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Instant Demo Access (1-Click)
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <button
+              type="button"
+              onClick={() => handleQuickDemoLogin('student@cdu.edu', 'Student@123')}
+              className="p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold transition-colors cursor-pointer text-center"
+            >
+              🎓 Rahul (CSE - 8.6 CGPA)
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickDemoLogin('student2@cdu.edu', 'Student@123')}
+              className="p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold transition-colors cursor-pointer text-center"
+            >
+              🎓 Ananya (ECE - 6.9 CGPA)
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleQuickDemoLogin('admin@cdu.edu', 'Admin@123')}
+            className="w-full mt-2 p-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl font-bold transition-colors cursor-pointer text-center text-[11px]"
+          >
+            🛡️ Login as Placement Cell Admin
+          </button>
+        </div>
+
+        {/* Back Link */}
+        <div className="mt-4 text-center">
+          <Link to="/" className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 font-semibold">
+            <ArrowLeft size={13} /> Return to Home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default StudentLogin;
