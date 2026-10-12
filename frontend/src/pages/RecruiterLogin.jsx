@@ -35,7 +35,7 @@ function RecruiterLogin() {
 
     try {
       if (isSignUp) {
-        const response = await axios.post('http://localhost:5000/api/auth/register', {
+        const response = await axios.post('https://cdu-project.vercel.app/api/auth/register', {
           email,
           password,
           role: 'RECRUITER',
@@ -48,7 +48,7 @@ function RecruiterLogin() {
           handleLoginSuccess(response.data.role, response.data.token);
         }, 1000);
       } else {
-        const response = await axios.post('http://localhost:5000/api/auth/login', {
+        const response = await axios.post('https://cdu-project.vercel.app/api/auth/login', {
           email,
           password
         });
@@ -74,7 +74,7 @@ function RecruiterLogin() {
     setError('');
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post('https://cdu-project.vercel.app/api/auth/login', {
         email: demoEmail,
         password: demoPassword,
       });
